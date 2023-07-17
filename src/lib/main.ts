@@ -1,19 +1,18 @@
-import { SyncFinder, AsyncFinder } from "./finders";
+import { AsyncFinder, SyncFinder } from "./finders.ts";
 import type {
   ArrayElement,
-  SyncOptionsTuple,
-  SyncOptsToUse,
   AsyncOptionsTuple,
   AsyncOptsToUse,
-} from "./finders";
-import type { SyncOptions, AsyncOptions } from "./types";
+  SyncOptionsTuple,
+  SyncOptsToUse,
+} from "./finders.ts";
+import type { AsyncOptions, SyncOptions } from "./types.ts";
 
-export type { FzfResultItem, Selector, Tiebreaker } from "./types";
-export * from "./matchers";
-export * from "./tiebreakers";
+export type { FzfResultItem, Selector, Tiebreaker } from "./types.ts";
+export * from "./matchers.ts";
+export * from "./tiebreakers.ts";
 
-export type FzfOptions<U = string> = U extends string
-  ? SyncOptsToUse<U>
+export type FzfOptions<U = string> = U extends string ? SyncOptsToUse<U>
   : SyncOptsToUse<U> & { selector: SyncOptions<U>["selector"] };
 
 export class Fzf<L extends ReadonlyArray<any>> {
@@ -26,8 +25,7 @@ export class Fzf<L extends ReadonlyArray<any>> {
   }
 }
 
-export type AsyncFzfOptions<U = string> = U extends string
-  ? AsyncOptsToUse<U>
+export type AsyncFzfOptions<U = string> = U extends string ? AsyncOptsToUse<U>
   : AsyncOptsToUse<U> & { selector: AsyncOptions<U>["selector"] };
 
 export class AsyncFzf<L extends ReadonlyArray<any>> {

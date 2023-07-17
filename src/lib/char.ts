@@ -1,12 +1,16 @@
-import { Rune } from "./runes";
+import { Rune } from "./runes.ts";
 
 // values for `\s` from https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions/Cheatsheet
 const whitespaceRunes = new Set(
   " \f\n\r\t\v\u00a0\u1680\u2028\u2029\u202f\u205f\u3000\ufeff"
     .split("")
-    .map((v) => v.codePointAt(0)!)
+    .map((v) => v.codePointAt(0)!),
 );
-for (let codePoint = "\u2000".codePointAt(0)!; codePoint <= "\u200a".codePointAt(0)!; codePoint++) {
+for (
+  let codePoint = "\u2000".codePointAt(0)!;
+  codePoint <= "\u200a".codePointAt(0)!;
+  codePoint++
+) {
   whitespaceRunes.add(codePoint);
 }
 

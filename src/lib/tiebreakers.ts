@@ -1,13 +1,16 @@
-import type { FzfResultItem, Selector } from "./types";
+import type { FzfResultItem, Selector } from "./types.ts";
 
 export function byLengthAsc<U>(
   a: FzfResultItem<U>,
   b: FzfResultItem<U>,
-  selector: Selector<U>
+  selector: Selector<U>,
 ): number {
   return selector(a.item).length - selector(b.item).length;
 }
 
-export function byStartAsc<U>(a: FzfResultItem<U>, b: FzfResultItem<U>): number {
+export function byStartAsc<U>(
+  a: FzfResultItem<U>,
+  b: FzfResultItem<U>,
+): number {
   return a.start - b.start;
 }

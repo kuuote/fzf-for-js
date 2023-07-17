@@ -1,4 +1,4 @@
-import { Rune } from "./runes";
+import { Rune } from "./runes.ts";
 
 const normalized: Record<number, string> = {
   0x00d8: "O",
@@ -190,7 +190,9 @@ const normalized: Record<number, string> = {
 for (let i = "\u0300".codePointAt(0)!; i <= "\u036F".codePointAt(0)!; ++i) {
   const diacritic = String.fromCodePoint(i);
 
-  for (const asciiChar of "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz") {
+  for (
+    const asciiChar of "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+  ) {
     const withDiacritic = (asciiChar + diacritic).normalize();
     const withDiacriticCodePoint = withDiacritic.codePointAt(0)!;
     if (withDiacriticCodePoint > 126) {

@@ -1,5 +1,5 @@
-import type { Result } from "./algo";
-import type { SyncFinder, AsyncFinder } from "./finders";
+import type { Result } from "./algo.ts";
+import type { AsyncFinder, SyncFinder } from "./finders.ts";
 
 export interface Token {
   cancelled: boolean;
@@ -17,7 +17,7 @@ export type Selector<U> = BaseOptions<U>["selector"];
 export type Tiebreaker<U> = (
   a: FzfResultItem<U>,
   b: FzfResultItem<U>,
-  selector: Selector<U>
+  selector: Selector<U>,
 ) => number;
 
 export interface BaseOptions<U> {
@@ -131,7 +131,10 @@ export type SyncOptions<U> = BaseOptions<U> & {
    *
    * @defaultValue `basicMatch`
    */
-  match: (this: SyncFinder<ReadonlyArray<U>>, query: string) => FzfResultItem<U>[];
+  match: (
+    this: SyncFinder<ReadonlyArray<U>>,
+    query: string,
+  ) => FzfResultItem<U>[];
 };
 
 export type AsyncOptions<U> = BaseOptions<U> & {
@@ -149,6 +152,6 @@ export type AsyncOptions<U> = BaseOptions<U> & {
   match: (
     this: AsyncFinder<ReadonlyArray<U>>,
     query: string,
-    token: Token
+    token: Token,
   ) => Promise<FzfResultItem<U>[]>;
 };

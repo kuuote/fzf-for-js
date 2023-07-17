@@ -1,31 +1,32 @@
-import { fuzzyMatchV2, fuzzyMatchV1, AlgoFn, exactMatchNaive } from "./algo";
-import { basicMatch, asyncBasicMatch } from "./matchers";
-import { Rune, strToRunes } from "./runes";
+import { AlgoFn, exactMatchNaive, fuzzyMatchV1, fuzzyMatchV2 } from "./algo.ts";
+import { asyncBasicMatch, basicMatch } from "./matchers.ts";
+import { Rune, strToRunes } from "./runes.ts";
 import {
-  FzfResultItem,
-  BaseOptions,
-  SyncOptions,
   AsyncOptions,
+  BaseOptions,
+  FzfResultItem,
+  Selector,
+  SyncOptions,
   Tiebreaker,
   Token,
-  Selector,
-} from "./types";
+} from "./types.ts";
 
 export type ArrayElement<ArrayType extends readonly unknown[]> =
   ArrayType extends readonly (infer ElementType)[] ? ElementType : never;
 
 type SortAttrs<U> =
   | {
-      sort?: true;
-      tiebreakers?: Tiebreaker<U>[];
-    }
+    sort?: true;
+    tiebreakers?: Tiebreaker<U>[];
+  }
   | { sort: false };
 
-type BaseOptsToUse<U> = Omit<Partial<BaseOptions<U>>, "sort" | "tiebreakers"> & SortAttrs<U>;
+type BaseOptsToUse<U> =
+  & Omit<Partial<BaseOptions<U>>, "sort" | "tiebreakers">
+  & SortAttrs<U>;
 
 // from https://stackoverflow.com/a/52318137/7683365
-type BaseOptionsTuple<U> = U extends string
-  ? [options?: BaseOptsToUse<U>]
+type BaseOptionsTuple<U> = U extends string ? [options?: BaseOptsToUse<U>]
   : [options: BaseOptsToUse<U> & { selector: Selector<U> }];
 
 const defaultOpts: BaseOptions<any> = {
@@ -50,7 +51,9 @@ export abstract class BaseFinder<L extends ReadonlyArray<any>> {
   constructor(list: L, ...optionsTuple: BaseOptionsTuple<ArrayElement<L>>) {
     this.opts = { ...defaultOpts, ...optionsTuple[0] };
     this.items = list;
-    this.runesList = list.map((item) => strToRunes(this.opts.selector(item).normalize()));
+    this.runesList = list.map((item) =>
+      strToRunes(this.opts.selector(item).normalize())
+    );
     this.algoFn = exactMatchNaive;
     switch (this.opts.fuzzy) {
       case "v2":
@@ -63,7 +66,9 @@ export abstract class BaseFinder<L extends ReadonlyArray<any>> {
   }
 }
 
-export type SyncOptsToUse<U> = BaseOptsToUse<U> & Partial<Pick<SyncOptions<U>, "match">>;
+export type SyncOptsToUse<U> =
+  & BaseOptsToUse<U>
+  & Partial<Pick<SyncOptions<U>, "match">>;
 
 export type SyncOptionsTuple<U> = U extends string
   ? [options?: SyncOptsToUse<U>]
@@ -83,18 +88,25 @@ export class SyncFinder<L extends ReadonlyArray<any>> extends BaseFinder<L> {
   }
 
   find(query: string): FzfResultItem<ArrayElement<L>>[] {
-    if (query.length === 0 || this.items.length === 0)
-      return this.items.slice(0, this.opts.limit).map(createResultItemWithEmptyPos);
+    if (query.length === 0 || this.items.length === 0) {
+      return this.items.slice(0, this.opts.limit).map(
+        createResultItemWithEmptyPos,
+      );
+    }
 
     query = query.normalize();
 
-    let result: FzfResultItem<ArrayElement<L>>[] = this.opts.match.bind(this)(query);
+    let result: FzfResultItem<ArrayElement<L>>[] = this.opts.match.bind(this)(
+      query,
+    );
 
     return postProcessResultItems(result, this.opts);
   }
 }
 
-export type AsyncOptsToUse<U> = BaseOptsToUse<U> & Partial<Pick<AsyncOptions<U>, "match">>;
+export type AsyncOptsToUse<U> =
+  & BaseOptsToUse<U>
+  & Partial<Pick<AsyncOptions<U>, "match">>;
 
 export type AsyncOptionsTuple<U> = U extends string
   ? [options?: AsyncOptsToUse<U>]
@@ -119,14 +131,18 @@ export class AsyncFinder<L extends ReadonlyArray<any>> extends BaseFinder<L> {
     this.token.cancelled = true;
     this.token = { cancelled: false };
 
-    if (query.length === 0 || this.items.length === 0)
-      return this.items.slice(0, this.opts.limit).map(createResultItemWithEmptyPos);
+    if (query.length === 0 || this.items.length === 0) {
+      return this.items.slice(0, this.opts.limit).map(
+        createResultItemWithEmptyPos,
+      );
+    }
 
     query = query.normalize();
 
-    let result = (await this.opts.match.bind(this)(query, this.token)) as FzfResultItem<
-      ArrayElement<L>
-    >[];
+    let result =
+      (await this.opts.match.bind(this)(query, this.token)) as FzfResultItem<
+        ArrayElement<L>
+      >[];
 
     return postProcessResultItems(result, this.opts);
   }
@@ -140,7 +156,10 @@ const createResultItemWithEmptyPos = <U>(item: U): FzfResultItem<U> => ({
   positions: new Set(),
 });
 
-function postProcessResultItems<U>(result: FzfResultItem<U>[], opts: BaseOptions<U>) {
+function postProcessResultItems<U>(
+  result: FzfResultItem<U>[],
+  opts: BaseOptions<U>,
+) {
   if (opts.sort) {
     const { selector } = opts;
 

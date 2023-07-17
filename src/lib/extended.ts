@@ -1,8 +1,12 @@
-import { AlgoFn } from "./algo";
-import { Int32 } from "./numerics";
-import { buildPatternForExtendedMatch, TermType, termTypeMap } from "./pattern";
-import { Rune } from "./runes";
-import { slab, Slab } from "./slab";
+import { AlgoFn } from "./algo.ts";
+import { Int32 } from "./numerics.ts";
+import {
+  buildPatternForExtendedMatch,
+  TermType,
+  termTypeMap,
+} from "./pattern.ts";
+import { Rune } from "./runes.ts";
+import { Slab, slab } from "./slab.ts";
 
 interface Token {
   text: Rune[];
@@ -19,10 +23,18 @@ function iter(
   normalize: boolean,
   forward: boolean,
   pattern: Rune[],
-  slab: Slab
+  slab: Slab,
 ): [Offset, number, Set<number> | null] {
   for (const part of tokens) {
-    const [res, pos] = algoFn(caseSensitive, normalize, forward, part.text, pattern, true, slab);
+    const [res, pos] = algoFn(
+      caseSensitive,
+      normalize,
+      forward,
+      part.text,
+      pattern,
+      true,
+      slab,
+    );
     if (res.start >= 0) {
       // res.start and res.end were typecasted to int32 here
       const sidx = res.start + part.prefixLength;
@@ -43,7 +55,7 @@ export function computeExtendedMatch(
   text: Rune[],
   pattern: ReturnType<typeof buildPatternForExtendedMatch>,
   fuzzyAlgo: AlgoFn,
-  forward: boolean
+  forward: boolean,
 ) {
   // https://github.com/junegunn/fzf/blob/764316a53d0eb60b315f0bbcd513de58ed57a876/src/pattern.go#L354
   // ^ TODO maybe this helps in caching by not calculating already calculated stuff but whatever
@@ -78,7 +90,7 @@ export function computeExtendedMatch(
         term.normalize,
         forward,
         term.text,
-        slab
+        slab,
       );
 
       const sidx = off[0];

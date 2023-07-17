@@ -1,12 +1,15 @@
-import { slab } from "./slab";
-import { buildPatternForBasicMatch, buildPatternForExtendedMatch } from "./pattern";
-import { computeExtendedMatch } from "./extended";
-import type { BaseFinder, SyncFinder, AsyncFinder } from "./finders";
-import { FzfResultItem, Token } from "./types";
+import { slab } from "./slab.ts";
+import {
+  buildPatternForBasicMatch,
+  buildPatternForExtendedMatch,
+} from "./pattern.ts";
+import { computeExtendedMatch } from "./extended.ts";
+import type { AsyncFinder, BaseFinder, SyncFinder } from "./finders.ts";
+import { FzfResultItem, Token } from "./types.ts";
 
 function getResultFromScoreMap<T>(
   scoreMap: Record<number, FzfResultItem<T>[]>,
-  limit: number
+  limit: number,
 ): FzfResultItem<T>[] {
   const scoresInDesc = Object.keys(scoreMap)
     .map((v) => parseInt(v, 10))
@@ -28,7 +31,7 @@ function getBasicMatchIter<U>(
   this: BaseFinder<ReadonlyArray<U>>,
   scoreMap: Record<number, FzfResultItem<U>[]>,
   queryRunes: number[],
-  caseSensitive: boolean
+  caseSensitive: boolean,
 ) {
   return (idx: number) => {
     const itemRunes = this.runesList[idx];
@@ -41,7 +44,7 @@ function getBasicMatchIter<U>(
       itemRunes,
       queryRunes,
       true,
-      slab
+      slab,
     );
     if (match.start === -1) return;
 
@@ -71,11 +74,16 @@ function getBasicMatchIter<U>(
 function getExtendedMatchIter<U>(
   this: BaseFinder<ReadonlyArray<U>>,
   scoreMap: Record<number, FzfResultItem<U>[]>,
-  pattern: ReturnType<typeof buildPatternForExtendedMatch>
+  pattern: ReturnType<typeof buildPatternForExtendedMatch>,
 ) {
   return (idx: number) => {
     const runes = this.runesList[idx];
-    const match = computeExtendedMatch(runes, pattern, this.algoFn, this.opts.forward);
+    const match = computeExtendedMatch(
+      runes,
+      pattern,
+      this.algoFn,
+      this.opts.forward,
+    );
     if (match.offsets.length !== pattern.termSets.length) return;
 
     let sidx = -1,
@@ -101,11 +109,14 @@ function getExtendedMatchIter<U>(
 
 // Sync matchers:
 
-export function basicMatch<U>(this: SyncFinder<ReadonlyArray<U>>, query: string) {
+export function basicMatch<U>(
+  this: SyncFinder<ReadonlyArray<U>>,
+  query: string,
+) {
   const { queryRunes, caseSensitive } = buildPatternForBasicMatch(
     query,
     this.opts.casing,
-    this.opts.normalize
+    this.opts.normalize,
   );
 
   const scoreMap: Record<number, FzfResultItem<U>[]> = {};
@@ -113,7 +124,7 @@ export function basicMatch<U>(this: SyncFinder<ReadonlyArray<U>>, query: string)
   const iter = getBasicMatchIter.bind(this as BaseFinder<readonly U[]>)(
     scoreMap,
     queryRunes,
-    caseSensitive
+    caseSensitive,
   );
   for (let i = 0, len = this.runesList.length; i < len; ++i) {
     iter(i);
@@ -122,17 +133,23 @@ export function basicMatch<U>(this: SyncFinder<ReadonlyArray<U>>, query: string)
   return getResultFromScoreMap(scoreMap, this.opts.limit);
 }
 
-export function extendedMatch<U>(this: SyncFinder<ReadonlyArray<U>>, query: string) {
+export function extendedMatch<U>(
+  this: SyncFinder<ReadonlyArray<U>>,
+  query: string,
+) {
   const pattern = buildPatternForExtendedMatch(
     Boolean(this.opts.fuzzy),
     this.opts.casing,
     this.opts.normalize,
-    query
+    query,
   );
 
   const scoreMap: Record<number, FzfResultItem<U>[]> = {};
 
-  const iter = getExtendedMatchIter.bind(this as BaseFinder<readonly U[]>)(scoreMap, pattern);
+  const iter = getExtendedMatchIter.bind(this as BaseFinder<readonly U[]>)(
+    scoreMap,
+    pattern,
+  );
   for (let i = 0, len = this.runesList.length; i < len; ++i) {
     iter(i);
   }
@@ -151,7 +168,7 @@ function asyncMatcher<F>(
   token: Token,
   len: number,
   iter: (index: number) => unknown,
-  onFinish: () => F
+  onFinish: () => F,
 ): Promise<F> {
   return new Promise((resolve, reject) => {
     const INCREMENT = 1000;
@@ -168,8 +185,8 @@ function asyncMatcher<F>(
       if (end < len) {
         end = Math.min(end + INCREMENT, len);
         isNode
-          ? // @ts-ignore unavailable or deprecated for browsers
-            setImmediate(step)
+          // @ts-ignore unavailable or deprecated for browsers
+          ? setImmediate(step)
           : setTimeout(step);
       } else {
         resolve(onFinish());
@@ -183,12 +200,12 @@ function asyncMatcher<F>(
 export function asyncBasicMatch<U>(
   this: AsyncFinder<ReadonlyArray<U>>,
   query: string,
-  token: Token
+  token: Token,
 ): Promise<FzfResultItem<U>[]> {
   const { queryRunes, caseSensitive } = buildPatternForBasicMatch(
     query,
     this.opts.casing,
-    this.opts.normalize
+    this.opts.normalize,
   );
 
   const scoreMap: Record<number, FzfResultItem<U>[]> = {};
@@ -196,21 +213,25 @@ export function asyncBasicMatch<U>(
   return asyncMatcher(
     token,
     this.runesList.length,
-    getBasicMatchIter.bind(this as BaseFinder<readonly U[]>)(scoreMap, queryRunes, caseSensitive),
-    () => getResultFromScoreMap(scoreMap, this.opts.limit)
+    getBasicMatchIter.bind(this as BaseFinder<readonly U[]>)(
+      scoreMap,
+      queryRunes,
+      caseSensitive,
+    ),
+    () => getResultFromScoreMap(scoreMap, this.opts.limit),
   );
 }
 
 export function asyncExtendedMatch<U>(
   this: AsyncFinder<ReadonlyArray<U>>,
   query: string,
-  token: Token
+  token: Token,
 ) {
   const pattern = buildPatternForExtendedMatch(
     Boolean(this.opts.fuzzy),
     this.opts.casing,
     this.opts.normalize,
-    query
+    query,
   );
 
   const scoreMap: Record<number, FzfResultItem<U>[]> = {};
@@ -218,7 +239,10 @@ export function asyncExtendedMatch<U>(
   return asyncMatcher(
     token,
     this.runesList.length,
-    getExtendedMatchIter.bind(this as BaseFinder<readonly U[]>)(scoreMap, pattern),
-    () => getResultFromScoreMap(scoreMap, this.opts.limit)
+    getExtendedMatchIter.bind(this as BaseFinder<readonly U[]>)(
+      scoreMap,
+      pattern,
+    ),
+    () => getResultFromScoreMap(scoreMap, this.opts.limit),
   );
 }

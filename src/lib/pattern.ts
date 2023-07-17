@@ -1,7 +1,13 @@
-import { equalMatch, exactMatchNaive, fuzzyMatchV2, prefixMatch, suffixMatch } from "./algo";
-import { normalizeRune } from "./normalize";
-import { Rune, runesToStr, strToRunes } from "./runes";
-import { Casing } from "./types";
+import {
+  equalMatch,
+  exactMatchNaive,
+  fuzzyMatchV2,
+  prefixMatch,
+  suffixMatch,
+} from "./algo.ts";
+import { normalizeRune } from "./normalize.ts";
+import { Rune, runesToStr, strToRunes } from "./runes.ts";
+import { Casing } from "./types.ts";
 
 export enum TermType {
   Fuzzy,
@@ -33,7 +39,7 @@ export function buildPatternForExtendedMatch(
   fuzzy: boolean,
   caseMode: Casing,
   normalize: boolean,
-  str: string
+  str: string,
 ) {
   // TODO Implement caching here and below.
   // cacheable is received from caller of this fn
@@ -47,7 +53,9 @@ export function buildPatternForExtendedMatch(
   // ^^ simplified below:
   {
     const trimmedAtRightStr = str.trimRight();
-    if (trimmedAtRightStr.endsWith("\\") && str[trimmedAtRightStr.length] === " ") {
+    if (
+      trimmedAtRightStr.endsWith("\\") && str[trimmedAtRightStr.length] === " "
+    ) {
       str = trimmedAtRightStr + " ";
     } else {
       str = trimmedAtRightStr;
@@ -64,7 +72,8 @@ export function buildPatternForExtendedMatch(
 
   termSets = parseTerms(fuzzy, caseMode, normalize, str);
 
-  Loop: for (const termSet of termSets) {
+  Loop:
+  for (const termSet of termSets) {
     for (const [idx, term] of termSet.entries()) {
       if (!term.inv) {
         sortable = true;
@@ -102,7 +111,12 @@ export function buildPatternForExtendedMatch(
   };
 }
 
-function parseTerms(fuzzy: boolean, caseMode: Casing, normalize: boolean, str: string): TermSet[] {
+function parseTerms(
+  fuzzy: boolean,
+  caseMode: Casing,
+  normalize: boolean,
+  str: string,
+): TermSet[] {
   // <backslash><space> to a <tab>
   str = str.replace(/\\ /g, "\t");
   // split on space groups
@@ -119,12 +133,12 @@ function parseTerms(fuzzy: boolean, caseMode: Casing, normalize: boolean, str: s
       text = token.replace(/\t/g, " ");
     const lowerText = text.toLowerCase();
 
-    const caseSensitive =
-      caseMode === "case-sensitive" || (caseMode === "smart-case" && text !== lowerText);
+    const caseSensitive = caseMode === "case-sensitive" ||
+      (caseMode === "smart-case" && text !== lowerText);
 
     // TODO double conversion here, could be simplified
-    const normalizeTerm =
-      normalize && lowerText === runesToStr(strToRunes(lowerText).map(normalizeRune));
+    const normalizeTerm = normalize &&
+      lowerText === runesToStr(strToRunes(lowerText).map(normalizeRune));
 
     if (!caseSensitive) {
       text = lowerText;
@@ -196,7 +210,11 @@ function parseTerms(fuzzy: boolean, caseMode: Casing, normalize: boolean, str: s
   return sets;
 }
 
-export const buildPatternForBasicMatch = (query: string, casing: Casing, normalize: boolean) => {
+export const buildPatternForBasicMatch = (
+  query: string,
+  casing: Casing,
+  normalize: boolean,
+) => {
   let caseSensitive = false;
 
   switch (casing) {

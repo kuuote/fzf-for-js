@@ -4,11 +4,11 @@
 //
 // updated to match to FZF commit hash 9cb7a364a31bdb882d873807774bdcf6fad0c9e4
 
-import { normalizeRune } from "./normalize";
-import { Slab } from "./slab";
-import { Int16, Int32, toShort, toInt, maxInt16 } from "./numerics";
-import { Rune, runesToStr } from "./runes";
-import { isWhitespace, whitespacesAtEnd, whitespacesAtStart } from "./char";
+import { normalizeRune } from "./normalize.ts";
+import { Slab } from "./slab.ts";
+import { Int16, Int32, maxInt16, toInt, toShort } from "./numerics.ts";
+import { Rune, runesToStr } from "./runes.ts";
+import { isWhitespace, whitespacesAtEnd, whitespacesAtStart } from "./char.ts";
 
 const DEBUG = false;
 
@@ -78,7 +78,11 @@ function createPosSet(withPos: boolean) {
   return null;
 }
 
-function alloc16(offset: number, slab: Slab | null, size: number): [number, Int16Array] {
+function alloc16(
+  offset: number,
+  slab: Slab | null,
+  size: number,
+): [number, Int16Array] {
   if (slab !== null && slab.i16.length > offset + size) {
     const subarray = slab.i16.subarray(offset, offset + size);
     return [offset + size, subarray];
@@ -87,7 +91,11 @@ function alloc16(offset: number, slab: Slab | null, size: number): [number, Int1
   return [offset, new Int16Array(size)];
 }
 
-function alloc32(offset: number, slab: Slab | null, size: number): [number, Int32Array] {
+function alloc32(
+  offset: number,
+  slab: Slab | null,
+  size: number,
+): [number, Int32Array] {
   if (slab !== null && slab.i32.length > offset + size) {
     const subarray = slab.i32.subarray(offset, offset + size);
     return [offset + size, subarray];
@@ -176,10 +184,15 @@ export type AlgoFn = (
   input: Rune[],
   pattern: Rune[],
   withPos: boolean,
-  slab: Slab | null
+  slab: Slab | null,
 ) => [Result, Set<number> | null];
 
-function trySkip(input: Rune[], caseSensitive: boolean, char: Rune, from: number): number {
+function trySkip(
+  input: Rune[],
+  caseSensitive: boolean,
+  char: Rune,
+  from: number,
+): number {
   let rest = input.slice(from);
   let idx = rest.indexOf(char);
   if (idx === 0) {
@@ -216,7 +229,11 @@ function isAscii(runes: Rune[]) {
   return true;
 }
 
-function asciiFuzzyIndex(input: Rune[], pattern: Rune[], caseSensitive: boolean): number {
+function asciiFuzzyIndex(
+  input: Rune[],
+  pattern: Rune[],
+  caseSensitive: boolean,
+): number {
   /*
    * this https://github.com/junegunn/fzf/blob/7191ebb615f5d6ebbf51d598d8ec853a65e2274d/src/algo/algo.go#L280-L283
    * is basically checking if input has only ASCII chars, see
@@ -248,7 +265,14 @@ function asciiFuzzyIndex(input: Rune[], pattern: Rune[], caseSensitive: boolean)
   return firstIdx;
 }
 
-function debugV2(T: Rune[], pattern: Rune[], F: Int32[], lastIdx: number, H: Int16[], C: Int16[]) {
+function debugV2(
+  T: Rune[],
+  pattern: Rune[],
+  F: Int32[],
+  lastIdx: number,
+  H: Int16[],
+  C: Int16[],
+) {
   // TODO
   console.error(" complete this!!!! ");
 }
@@ -260,7 +284,7 @@ export const fuzzyMatchV2: AlgoFn = (
   input,
   pattern,
   withPos,
-  slab
+  slab,
 ) => {
   const M = pattern.length;
   if (M === 0) {
@@ -270,7 +294,15 @@ export const fuzzyMatchV2: AlgoFn = (
   const N = input.length;
 
   if (slab !== null && N * M > slab.i16.length) {
-    return fuzzyMatchV1(caseSensitive, normalize, forward, input, pattern, withPos, slab);
+    return fuzzyMatchV1(
+      caseSensitive,
+      normalize,
+      forward,
+      input,
+      pattern,
+      withPos,
+      slab,
+    );
   }
 
   // Phase 1. Optimized search for ASCII string
@@ -346,7 +378,10 @@ export const fuzzyMatchV2: AlgoFn = (
       const score = SCORE_MATCH + bonus * BONUS_FIRST_CHAR_MULTIPLIER;
       H0sub[off] = score;
       C0sub[off] = 1;
-      if (M === 1 && ((forward && score > maxScore) || (!forward && score >= maxScore))) {
+      if (
+        M === 1 &&
+        ((forward && score > maxScore) || (!forward && score >= maxScore))
+      ) {
         maxScore = score;
         maxScorePos = idx + off;
         // bonus is int16 but BONUS_BOUNDARY is int. It might have needed casting in other lang
@@ -451,7 +486,10 @@ export const fuzzyMatchV2: AlgoFn = (
           consecutive = 1;
         } else if (consecutive > 1) {
           // `consecutive` needs to be casted to int in other lang
-          b = maxInt16(b, maxInt16(BONUS_CONSECUTIVE, B[col - consecutive + 1]));
+          b = maxInt16(
+            b,
+            maxInt16(BONUS_CONSECUTIVE, B[col - consecutive + 1]),
+          );
         }
 
         if (s1 + b < s2) {
@@ -465,7 +503,10 @@ export const fuzzyMatchV2: AlgoFn = (
 
       inGap = s1 < s2;
       const score = maxInt16(maxInt16(s1, s2), 0);
-      if (pidx === M - 1 && ((forward && score > maxScore) || (!forward && score >= maxScore))) {
+      if (
+        pidx === M - 1 &&
+        ((forward && score > maxScore) || (!forward && score >= maxScore))
+      ) {
         maxScore = score;
         maxScorePos = col;
       }
@@ -512,7 +553,8 @@ export const fuzzyMatchV2: AlgoFn = (
         i--;
       }
 
-      preferMatch = C[I + j0] > 1 || (I + width + j0 + 1 < C.length && C[I + width + j0 + 1] > 0);
+      preferMatch = C[I + j0] > 1 ||
+        (I + width + j0 + 1 < C.length && C[I + width + j0 + 1] > 0);
       j--;
     }
   }
@@ -528,7 +570,7 @@ function calculateScore(
   pattern: Rune[],
   sidx: number,
   eidx: number,
-  withPos: boolean
+  withPos: boolean,
 ): [number, Set<number> | null] {
   let pidx = 0,
     score = 0,
@@ -610,7 +652,7 @@ export const fuzzyMatchV1: AlgoFn = (
   text,
   pattern,
   withPos,
-  slab
+  slab,
 ) => {
   if (pattern.length === 0) {
     return [{ start: 0, end: 0, score: 0 }, null];
@@ -697,7 +739,7 @@ export const fuzzyMatchV1: AlgoFn = (
       pattern,
       sidx,
       eidx,
-      withPos
+      withPos,
     );
     return [{ start: sidx, end: eidx, score }, pos];
   }
@@ -712,7 +754,7 @@ export const exactMatchNaive: AlgoFn = (
   text,
   pattern,
   withPos,
-  slab
+  slab,
 ) => {
   if (pattern.length === 0) {
     return [{ start: 0, end: 0, score: 0 }, null];
@@ -792,7 +834,15 @@ export const exactMatchNaive: AlgoFn = (
       eidx = lenRunes - (bestPos - lenPattern + 1);
     }
 
-    const [score] = calculateScore(caseSensitive, normalize, text, pattern, sidx, eidx, false);
+    const [score] = calculateScore(
+      caseSensitive,
+      normalize,
+      text,
+      pattern,
+      sidx,
+      eidx,
+      false,
+    );
     return [{ start: sidx, end: eidx, score }, null];
   }
 
@@ -806,7 +856,7 @@ export const prefixMatch: AlgoFn = (
   text,
   pattern,
   withPos,
-  slab
+  slab,
 ) => {
   if (pattern.length === 0) {
     return [{ start: 0, end: 0, score: 0 }, null];
@@ -845,7 +895,7 @@ export const prefixMatch: AlgoFn = (
     pattern,
     trimmedLen,
     trimmedLen + lenPattern,
-    false
+    false,
   );
   return [{ start: trimmedLen, end: trimmedLen + lenPattern, score }, null];
 };
@@ -857,14 +907,16 @@ export const suffixMatch: AlgoFn = (
   text,
   pattern,
   withPos,
-  slab
+  slab,
 ) => {
   const lenRunes = text.length;
   let trimmedLen = lenRunes;
 
   if (
     pattern.length === 0 ||
-    !isWhitespace(pattern[pattern.length - 1]) /* last el in pattern is not a space */
+    !isWhitespace(
+      pattern[pattern.length - 1],
+    ) /* last el in pattern is not a space */
   ) {
     trimmedLen -= whitespacesAtEnd(text);
   }
@@ -898,7 +950,15 @@ export const suffixMatch: AlgoFn = (
   const lenPattern = pattern.length;
   const sidx = trimmedLen - lenPattern;
   const eidx = trimmedLen;
-  const [score] = calculateScore(caseSensitive, normalize, text, pattern, sidx, eidx, false);
+  const [score] = calculateScore(
+    caseSensitive,
+    normalize,
+    text,
+    pattern,
+    sidx,
+    eidx,
+    false,
+  );
   return [{ start: sidx, end: eidx, score }, null];
 };
 
@@ -909,7 +969,7 @@ export const equalMatch: AlgoFn = (
   text,
   pattern,
   withPos,
-  slab
+  slab,
 ) => {
   const lenPattern = pattern.length;
   if (lenPattern === 0) {
@@ -947,7 +1007,10 @@ export const equalMatch: AlgoFn = (
       }
     }
   } else {
-    let runesStr = runesToStr(text).substring(trimmedLen, text.length - trimmedEndLen);
+    let runesStr = runesToStr(text).substring(
+      trimmedLen,
+      text.length - trimmedEndLen,
+    );
 
     if (!caseSensitive) {
       runesStr = runesStr.toLowerCase();
@@ -961,8 +1024,7 @@ export const equalMatch: AlgoFn = (
       {
         start: trimmedLen,
         end: trimmedLen + lenPattern,
-        score:
-          (SCORE_MATCH + BONUS_BOUNDARY) * lenPattern +
+        score: (SCORE_MATCH + BONUS_BOUNDARY) * lenPattern +
           (BONUS_FIRST_CHAR_MULTIPLIER - 1) * BONUS_BOUNDARY,
       },
       null,
